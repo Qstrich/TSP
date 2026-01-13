@@ -23,7 +23,6 @@ def christofides_tsp(data):
         edges.append((u, v, weight))
         
     G.add_weighted_edges_from(edges)
-    
     # NetworkX has a built-in approximation for Christofides
     try:
         # 'christofides' method is available in approximation module

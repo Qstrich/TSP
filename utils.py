@@ -2,6 +2,7 @@ import torch
 from torch_geometric.data import Data
 import numpy as np
 
+#Get graph from coords
 def create_full_graph(coords):
     num_nodes = coords.shape[0]
     adj = np.ones((num_nodes, num_nodes)) - np.eye(num_nodes)
