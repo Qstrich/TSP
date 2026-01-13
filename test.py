@@ -24,7 +24,7 @@ def evaluate():
         model.load_state_dict(torch.load(model_path, map_location=device))
         print(f"Loaded model from {model_path}")
     else:
-        print(f"Model file {model_path} not found. Train first!")
+        print(f"Model file {model_path} not found")
         return
 
     model.eval()

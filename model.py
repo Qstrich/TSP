@@ -24,6 +24,7 @@ class TSPGNN(nn.Module):
         h = self.node_embedding(x)
         
         for conv in self.convs:
+            # GCNConv: Simple averaging
             h = F.relu(conv(h, edge_index))
             
         row, col = edge_index

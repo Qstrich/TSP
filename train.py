@@ -22,15 +22,21 @@ def train_rl():
         
     print(f"Training on device: {device}")
 
-    epochs = 500
+    epochs = 20
     lr = 0.001
-    batch_size = 64
-    hidden_dim = 128
+    batch_size = 32
+    hidden_dim = 256
     
-    model = TSPGNN(input_dim=2, hidden_dim=hidden_dim).to(device)
+    model = TSPGNN(input_dim=2, hidden_dim=hidden_dim, num_layers=6).to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
     
-    print("Generating synthetic data and computing Christofides baselines...")
+    # Resume training if weights exist
+    model_path = "tsp_gnn_rl.pth"
+    if os.path.exists(model_path):
+        print(f"Resuming training from {model_path}...")
+        model.load_state_dict(torch.load(model_path, map_location=device))
+    
+    print("Generating synthetic data ")
     dataset = []
     for _ in range(2000):
         data = create_full_graph(torch.rand((20, 2)))
@@ -41,7 +47,7 @@ def train_rl():
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     
     model.train()
-    print(f"Starting REINFORCE training (Baseline: Christofides)...")
+    print(f"Starting training")
     
     for epoch in range(epochs):
         epoch_reward = 0
@@ -96,6 +102,7 @@ def train_rl():
             baselines = -batch.baseline
             
             advantage = rewards - baselines
+            advantage = (advantage - advantage.mean()) / (advantage.std() + 1e-8)
             loss = -(advantage * tour_log_probs).mean()
             
             loss.backward()
