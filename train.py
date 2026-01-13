@@ -33,7 +33,7 @@ def train_rl():
     # Resume training if weights exist
     model_path = "tsp_gnn_rl.pth"
     if os.path.exists(model_path):
-        print(f"Resuming training from {model_path}...")
+        print(f"Resuming training from {model_path}")
         model.load_state_dict(torch.load(model_path, map_location=device))
     
     print("Generating synthetic data ")
@@ -102,7 +102,6 @@ def train_rl():
             baselines = -batch.baseline
             
             advantage = rewards - baselines
-            advantage = (advantage - advantage.mean()) / (advantage.std() + 1e-8)
             loss = -(advantage * tour_log_probs).mean()
             
             loss.backward()
