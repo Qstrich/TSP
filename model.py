@@ -6,7 +6,6 @@ from torch_geometric.nn import GCNConv, GATv2Conv
 class TSPGNN(nn.Module):
     def __init__(self, input_dim: int = 2, hidden_dim: int = 64, num_layers: int = 4):
         super(TSPGNN, self).__init__()
-        
         self.node_embedding = nn.Linear(input_dim, hidden_dim)
         
         self.convs = nn.ModuleList([
@@ -14,7 +13,7 @@ class TSPGNN(nn.Module):
             for _ in range(num_layers)
         ])
             
-        # Input: [Node_Emb_1, Node_Emb_2, Distance]
+        # Input: [Source_Node_Emb, Target_Node_Emb, Edge_Distance]
         self.edge_classifier = nn.Sequential(
             nn.Linear(hidden_dim * 2 + 1, hidden_dim),
             nn.ReLU(),
@@ -26,10 +25,9 @@ class TSPGNN(nn.Module):
         
         for conv in self.convs:
             h = F.relu(conv(h, edge_index, edge_attr))
-            
+
         row, col = edge_index
         
-        # Concatenate Node A, Node B, and their Distance
         edge_features = torch.cat([h[row], h[col], edge_attr], dim=-1)
         
         edge_probs = self.edge_classifier(edge_features).squeeze(-1)

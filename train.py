@@ -22,7 +22,7 @@ def train_rl():
         
     print(f"Training on device: {device}")
 
-    epochs = 20
+    epochs = 100
     lr = 0.001
     batch_size = 32
     hidden_dim = 256
@@ -30,7 +30,6 @@ def train_rl():
     model = TSPGNN(input_dim=2, hidden_dim=hidden_dim, num_layers=6).to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
     
-    # Resume training if weights exist
     model_path = "tsp_gnn_rl.pth"
     if os.path.exists(model_path):
         print(f"Resuming training from {model_path}")
@@ -57,8 +56,10 @@ def train_rl():
             batch = batch.to(device)
             optimizer.zero_grad()
             
+            # Output: 'edge_scores_flat' is a long list of scores for every edge in every graph.
             edge_scores_flat = model(batch.x, batch.edge_index, batch.edge_attr)
             adj_scores = to_dense_adj(batch.edge_index, batch.batch, edge_scores_flat)
+            # Mask out self-loops (diagonal) so the model doesn't stay in the same city.
             adj_scores.diagonal(dim1=1, dim2=2).fill_(-float('inf'))
             
             B, N, _ = adj_scores.shape
@@ -66,14 +67,14 @@ def train_rl():
 
             visited = torch.zeros((B, N), dtype=torch.bool, device=device)
             curr_nodes = torch.zeros(B, dtype=torch.long, device=device)
-            visited[:, 0] = True
-            
+            visited[:, 0] = True 
             tour_log_probs = torch.zeros(B, device=device)
             batch_rewards = torch.zeros(B, device=device)
             step_log_probs = []
 
             for step in range(N - 1):
                 batch_indices = torch.arange(B, device=device)
+                
                 logits = adj_scores[batch_indices, curr_nodes, :]
                 logits = logits.masked_fill(visited, -float('inf'))
                 
@@ -82,28 +83,34 @@ def train_rl():
                 next_nodes = dist.sample()
                 
                 step_log_probs.append(dist.log_prob(next_nodes))
-                
                 visited = visited.clone()
                 visited[batch_indices, next_nodes] = True
                 
+                # Calculate the distance traveled in this step
                 prev_coords = batch_coords[batch_indices, curr_nodes]
                 new_coords = batch_coords[batch_indices, next_nodes]
                 batch_rewards += torch.norm(prev_coords - new_coords, dim=1)
                 
                 curr_nodes = next_nodes
 
+            # Add distance from the last city back to the start city (0)
             last_coords = batch_coords[batch_indices, curr_nodes]
             first_coords = batch_coords[batch_indices, 0]
             batch_rewards += torch.norm(last_coords - first_coords, dim=1)
             
             tour_log_probs = torch.stack(step_log_probs).sum(dim=0)
             
+
             rewards = -batch_rewards
-            baselines = -batch.baseline
+            baselines = -batch.baseline 
             
+            # Advantage = (GNN Reward) - (Baseline Reward)
             advantage = rewards - baselines
-            #Normalize in start to converge faster 
+            
+            # Normalize advantage for training stability
             advantage = (advantage - advantage.mean()) / (advantage.std() + 1e-8)
+            
+            # Loss: - (Advantage * log_prob)
             loss = -(advantage * tour_log_probs).mean()
             
             loss.backward()
