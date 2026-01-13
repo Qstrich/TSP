@@ -10,7 +10,8 @@ class TSPGNN(nn.Module):
         self.node_embedding = nn.Linear(input_dim, hidden_dim)
         
         self.convs = nn.ModuleList([
-            GATv2Conv(hidden_dim, hidden_dim, edge_dim=1) for _ in range(num_layers)
+            GATv2Conv(hidden_dim, hidden_dim, edge_dim=1, heads=4, concat=False) 
+            for _ in range(num_layers)
         ])
             
         # Input: [Node_Emb_1, Node_Emb_2, Distance]
@@ -18,14 +19,12 @@ class TSPGNN(nn.Module):
             nn.Linear(hidden_dim * 2 + 1, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, 1),
-            nn.Sigmoid()
         )
 
     def forward(self, x: torch.Tensor, edge_index: torch.Tensor, edge_attr: torch.Tensor) -> torch.Tensor:
         h = self.node_embedding(x)
         
         for conv in self.convs:
-            # GATv2Conv takes edge_attr directly!
             h = F.relu(conv(h, edge_index, edge_attr))
             
         row, col = edge_index

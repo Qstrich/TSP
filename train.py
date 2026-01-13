@@ -102,9 +102,12 @@ def train_rl():
             baselines = -batch.baseline
             
             advantage = rewards - baselines
+            #Normalize in start to converge faster 
+            advantage = (advantage - advantage.mean()) / (advantage.std() + 1e-8)
             loss = -(advantage * tour_log_probs).mean()
             
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             
             epoch_reward += batch_rewards.mean().item()
