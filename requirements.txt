@@ -1,0 +1,7 @@
+torch
+torch-geometric
+numpy
+matplotlib
+networkx
+scipy
+pandas
