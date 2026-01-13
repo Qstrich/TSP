@@ -7,14 +7,7 @@ env/
 # Data
 data/
 *.pth
-
-# Python
 __pycache__/
 *.pyc
-
-# IDE/Editor
 .vscode/
 .idea/
-
-# Gemini
-.gemini/
