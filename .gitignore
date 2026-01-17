@@ -1,13 +1,9 @@
-# Environments
 .venv/
 .venv_intel/
 venv/
 env/
-
-# Data
 data/
 *.pth
 __pycache__/
 *.pyc
 .vscode/
-.idea/
